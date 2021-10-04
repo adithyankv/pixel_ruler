@@ -4,6 +4,7 @@ executable(
   meson.project_name (),
 
   'main.c',
+  'window.c',
 
   dependencies: [gtkdeps]
   )

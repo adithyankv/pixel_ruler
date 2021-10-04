@@ -1,8 +1,9 @@
 #include <gtk/gtk.h>
+#include "window.h"
 
 void activate(GtkApplication *app) {
     GtkWidget *window;
-    window = gtk_application_window_new(app);
+    window = create_main_window(app);
 
     gtk_widget_show_all(window);
 }
