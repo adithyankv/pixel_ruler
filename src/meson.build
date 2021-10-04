@@ -5,6 +5,7 @@ executable(
 
   'main.c',
   'window.c',
+  'overlay.c',
 
   dependencies: [gtkdeps]
   )
