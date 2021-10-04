@@ -1,0 +1,9 @@
+# compiled files
+*.o
+*.orig
+
+# language server files
+compile_flags.txt
+
+# build directory
+build
