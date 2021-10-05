@@ -16,6 +16,12 @@ void draw_ruler(GtkWidget *drawing_area, int x, int y) {
     cairo_t *cairo_context;
     cairo_context = gdk_drawing_context_get_cairo_context(surface);
 
+    GdkCursor *cursor;
+    GdkDisplay *display;
+    display = gdk_display_get_default();
+    cursor = gdk_cursor_new_from_name(display, "crosshair");
+    gdk_window_set_cursor(window, cursor);
+
     SubRuler horizontal_ruler;
     horizontal_ruler.orientation = RULER_ORIENTATION_HORIZONTAL;
     horizontal_ruler.position = y;
