@@ -3,6 +3,8 @@
 #include "ruler.h"
 
 static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, gpointer *data);
+static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer data);
+static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
 
 void create_overlay_window(GtkWidget *window, gpointer *data) {
     /* creating a fullscreen always on top, transparent window to draw on.
@@ -23,10 +25,15 @@ void create_overlay_window(GtkWidget *window, gpointer *data) {
 
     GtkWidget *drawing_area;
     drawing_area = gtk_drawing_area_new();
-    gtk_widget_set_events(drawing_area, GDK_POINTER_MOTION_MASK);
-    gtk_widget_set_events(overlay_window, GDK_BUTTON_PRESS_MASK);
+    gtk_widget_set_events(drawing_area, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK);
+    gtk_widget_set_events(overlay_window, GDK_BUTTON_PRESS_MASK | GDK_KEY_PRESS_MASK);
     g_signal_connect(G_OBJECT (drawing_area), "motion-notify-event",
                      G_CALLBACK (on_mouse_moved), NULL);
+    g_signal_connect(G_OBJECT (overlay_window), "button-press-event",
+                     G_CALLBACK (on_mouse_clicked), NULL);
+    g_signal_connect(G_OBJECT (overlay_window), "key-press-event",
+                     G_CALLBACK (on_key_pressed), NULL);
+
     gtk_container_add(GTK_CONTAINER (overlay_window), drawing_area);
 
     if (visual != NULL && gdk_screen_is_composited(screen)) {
@@ -43,3 +50,31 @@ static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, gpointer *d
     }
 }
 
+static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer *data) {
+    if (event->type == GDK_KEY_PRESS) {
+        switch (event->key.keyval) {
+        /* close window on escape key */
+        case GDK_KEY_Escape:
+            gtk_widget_destroy (overlay_window);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer data) {
+    if (event->type == GDK_BUTTON_PRESS) {
+        switch (event->button.button) {
+        case 1:
+            g_print("left click\n");
+            break;
+        case 3:
+            g_print("right click\n");
+            break;
+        default:
+            g_print("button press");
+            break;
+        }
+    }
+}
