@@ -2,8 +2,7 @@
 #include <gdk/gdk.h>
 #include "ruler.h"
 
-static void draw_horizontal_ruler(HorizontalRuler ruler, cairo_t *cairo_context);
-static void draw_vertical_ruler(VerticalRuler ruler, cairo_t *cairo_context);
+static void draw_subruler(SubRuler ruler, cairo_t *cairo_context);
 static void clear_drawing_area(cairo_t *cairo_context);
 
 void draw_ruler(GtkWidget *drawing_area, int x, int y) {
@@ -17,51 +16,49 @@ void draw_ruler(GtkWidget *drawing_area, int x, int y) {
     cairo_t *cairo_context;
     cairo_context = gdk_drawing_context_get_cairo_context(surface);
 
-    HorizontalRuler h_ruler;
-    h_ruler.y = y;
-    h_ruler.left_x = 0;
-    h_ruler.right_x = 1920;
-    VerticalRuler v_ruler;
-    v_ruler.x = x;
-    v_ruler.top_y = 0;
-    v_ruler.bottom_y = 1080;
+    SubRuler horizontal_ruler;
+    horizontal_ruler.orientation = RULER_ORIENTATION_HORIZONTAL;
+    horizontal_ruler.position = y;
+    horizontal_ruler.start_coord = 0;
+    horizontal_ruler.end_coord = 1920;
+    SubRuler vertical_ruler;
+    vertical_ruler.orientation = RULER_ORIENTATION_VERTICAL;
+    vertical_ruler.position = x;
+    vertical_ruler.start_coord = 0;
+    vertical_ruler.end_coord = 1080;
 
     clear_drawing_area(cairo_context);
-    draw_horizontal_ruler(h_ruler, cairo_context);
-    draw_vertical_ruler(v_ruler, cairo_context);
+    draw_subruler(horizontal_ruler, cairo_context);
+    draw_subruler(vertical_ruler, cairo_context);
 
     gdk_window_end_draw_frame(window, surface);
 }
 
-static void draw_horizontal_ruler(HorizontalRuler ruler, cairo_t *cairo_context) {
+static void draw_subruler(SubRuler ruler, cairo_t *cairo_context) {
     cairo_set_operator(cairo_context, CAIRO_OPERATOR_SOURCE);
-    /* draw main line */
     cairo_set_source_rgb(cairo_context, 1, 0, 0);
-    cairo_move_to(cairo_context, ruler.left_x, ruler.y);
-    cairo_line_to(cairo_context, ruler.right_x, ruler.y);
+    /* draw main line */
+    if (ruler.orientation == RULER_ORIENTATION_VERTICAL) {
+        cairo_move_to(cairo_context, ruler.position, ruler.start_coord);
+        cairo_line_to(cairo_context, ruler.position, ruler.end_coord);
+    } else {
+        cairo_move_to(cairo_context, ruler.start_coord, ruler.position);
+        cairo_line_to(cairo_context, ruler.end_coord, ruler.position);
+    }
     cairo_stroke(cairo_context);
 
     /* draw end ticks */
-    cairo_move_to(cairo_context, ruler.left_x, ruler.y - 10);
-    cairo_line_to(cairo_context, ruler.left_x, ruler.y + 10);
-    cairo_move_to(cairo_context, ruler.right_x, ruler.y - 10);
-    cairo_line_to(cairo_context, ruler.right_x, ruler.y + 10);
-    cairo_stroke(cairo_context);
-}
-
-static void draw_vertical_ruler(VerticalRuler ruler, cairo_t *cairo_context) {
-    /* draw main line */
-    cairo_set_operator(cairo_context, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgb(cairo_context, 1, 0, 0);
-    cairo_move_to(cairo_context, ruler.x, 0);
-    cairo_line_to(cairo_context, ruler.x, 1080);
-    cairo_stroke(cairo_context);
-
-    /* draw end ticks */
-    cairo_move_to(cairo_context, ruler.x - 10, ruler.top_y);
-    cairo_line_to(cairo_context, ruler.x + 10, ruler.top_y);
-    cairo_move_to(cairo_context, ruler.x - 10, ruler.bottom_y);
-    cairo_line_to(cairo_context, ruler.x + 10, ruler.bottom_y);
+    if (ruler.orientation == RULER_ORIENTATION_VERTICAL) {
+        cairo_move_to(cairo_context, ruler.position - 10, ruler.start_coord);
+        cairo_line_to(cairo_context, ruler.position + 10, ruler.start_coord);
+        cairo_move_to(cairo_context, ruler.position - 10, ruler.end_coord);
+        cairo_line_to(cairo_context, ruler.position + 10, ruler.end_coord);
+    } else {
+        cairo_move_to(cairo_context, ruler.start_coord, ruler.position - 10);
+        cairo_line_to(cairo_context, ruler.start_coord, ruler.position + 10);
+        cairo_move_to(cairo_context, ruler.end_coord, ruler.position - 10);
+        cairo_line_to(cairo_context, ruler.end_coord, ruler.position + 10);
+    }
     cairo_stroke(cairo_context);
 }
 

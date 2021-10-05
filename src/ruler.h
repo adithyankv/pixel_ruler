@@ -3,17 +3,19 @@
 #include <gtk/gtk.h>
 #endif /* GTK_H_INCLUDED */
 
-typedef struct VerticalRuler {
-    int top_y, bottom_y, x;
-} VerticalRuler;
+typedef enum RulerOrientation {
+    RULER_ORIENTATION_VERTICAL,
+    RULER_ORIENTATION_HORIZONTAL
+} RulerOrientation;
 
-typedef struct HorizontalRuler {
-    int left_x, right_x, y;
-} HorizontalRuler;
+typedef struct SubRuler {
+    RulerOrientation orientation;
+    int start_coord, end_coord, position;
+} SubRuler;
 
 typedef struct Ruler {
-    HorizontalRuler *hruler;
-    VerticalRuler *vruler;
+    SubRuler *horizontal_ruler;
+    SubRuler *vertical_ruler;
 } Ruler;
 
 void draw_ruler(GtkWidget *drawing_area, int x, int y);
