@@ -16,7 +16,7 @@ void init_window_layout(GtkApplicationWindow *window) {
     layout_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
     button = gtk_button_new_with_label("start");
-    g_signal_connect(button, "clicked", G_CALLBACK (create_overlay_window), NULL);
+    g_signal_connect(G_OBJECT (button), "clicked", G_CALLBACK (create_overlay_window), NULL);
 
     gtk_widget_set_margin_start(layout_box, 10);
     gtk_widget_set_margin_end(layout_box, 10);

@@ -5,4 +5,4 @@
 
 #endif /* GTK_H_INCLUDED */
 
-void create_overlay_window();
+void create_overlay_window(GtkWidget *window, gpointer *data);
