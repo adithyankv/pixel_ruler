@@ -8,7 +8,7 @@ typedef struct VerticalRuler {
 } VerticalRuler;
 
 typedef struct HorizontalRuler {
-    int top_x, bottom_x, y;
+    int left_x, right_x, y;
 } HorizontalRuler;
 
 typedef struct Ruler {
