@@ -2,9 +2,10 @@
 #include "overlay.h"
 #include "ruler.h"
 
-static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, gpointer *data);
-static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer data);
+static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Ruler *ruler);
+static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
 static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
+static void on_destroy(GtkWidget *overlay_window, Ruler *ruler);
 
 void create_overlay_window(GtkWidget *window, gpointer *data) {
     /* creating a fullscreen always on top, transparent window to draw on.
@@ -17,6 +18,10 @@ void create_overlay_window(GtkWidget *window, gpointer *data) {
     gtk_widget_set_app_paintable(overlay_window, TRUE);
     gtk_window_fullscreen(GTK_WINDOW (overlay_window));
     gtk_window_set_keep_above(GTK_WINDOW (overlay_window), TRUE);
+    g_signal_connect(G_OBJECT (overlay_window), "button-press-event",
+                     G_CALLBACK (on_mouse_clicked), NULL);
+    g_signal_connect(G_OBJECT (overlay_window), "key-press-event",
+                     G_CALLBACK (on_key_pressed), NULL);
 
     GdkScreen *screen;
     GdkVisual *visual;
@@ -27,26 +32,34 @@ void create_overlay_window(GtkWidget *window, gpointer *data) {
     drawing_area = gtk_drawing_area_new();
     gtk_widget_set_events(drawing_area, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK);
     gtk_widget_set_events(overlay_window, GDK_BUTTON_PRESS_MASK | GDK_KEY_PRESS_MASK);
-    g_signal_connect(G_OBJECT (drawing_area), "motion-notify-event",
-                     G_CALLBACK (on_mouse_moved), NULL);
-    g_signal_connect(G_OBJECT (overlay_window), "button-press-event",
-                     G_CALLBACK (on_mouse_clicked), NULL);
-    g_signal_connect(G_OBJECT (overlay_window), "key-press-event",
-                     G_CALLBACK (on_key_pressed), NULL);
-
     gtk_container_add(GTK_CONTAINER (overlay_window), drawing_area);
 
     if (visual != NULL && gdk_screen_is_composited(screen)) {
         gtk_widget_set_visual(overlay_window, visual);
         gtk_widget_show_all(overlay_window);
     }
+
+    Ruler *ruler;
+    ruler = create_new_ruler();
+    SubRuler *horizontal_ruler, *vertical_ruler;
+    horizontal_ruler = create_new_subruler (RULER_ORIENTATION_HORIZONTAL);
+    vertical_ruler = create_new_subruler (RULER_ORIENTATION_VERTICAL);
+    ruler->horizontal_ruler = horizontal_ruler;
+    ruler->vertical_ruler = vertical_ruler;
+
+    g_signal_connect (G_OBJECT (overlay_window), "destroy",
+                      G_CALLBACK (on_destroy), (gpointer) ruler);
+    g_signal_connect(G_OBJECT (drawing_area), "motion-notify-event",
+                     G_CALLBACK (on_mouse_moved), (gpointer) ruler);
+
 }
 
-static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, gpointer *data) {
+static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Ruler *ruler) {
+    /* g_print("mouse_moved\n"); */
     if (event->type == GDK_MOTION_NOTIFY) {
         int mouse_x = event->motion.x;
         int mouse_y = event->motion.y;
-        draw_ruler(drawing_area, mouse_x, mouse_y);
+        draw_ruler(ruler, drawing_area, mouse_x, mouse_y);
     }
 }
 
@@ -63,7 +76,7 @@ static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer 
     }
 }
 
-static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer data) {
+static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer *data) {
     if (event->type == GDK_BUTTON_PRESS) {
         switch (event->button.button) {
         case 1:
@@ -77,4 +90,11 @@ static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointe
             break;
         }
     }
+}
+
+static void on_destroy(GtkWidget *overlay_window, Ruler *ruler) {
+    g_print("running destroy\n");
+    free(ruler->horizontal_ruler);
+    free(ruler->vertical_ruler);
+    free(ruler);
 }

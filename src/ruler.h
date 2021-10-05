@@ -10,7 +10,7 @@ typedef enum RulerOrientation {
 
 typedef struct SubRuler {
     RulerOrientation orientation;
-    int start_coord, end_coord, position;
+    int start_coord, end_coord, x, y;
 } SubRuler;
 
 typedef struct Ruler {
@@ -18,5 +18,7 @@ typedef struct Ruler {
     SubRuler *vertical_ruler;
 } Ruler;
 
-void draw_ruler(GtkWidget *drawing_area, int x, int y);
+void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y);
+SubRuler *create_new_subruler(RulerOrientation orientation);
+Ruler *create_new_ruler();
 
