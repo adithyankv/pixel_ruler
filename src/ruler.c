@@ -5,9 +5,9 @@
 
 static void draw_subruler(SubRuler *ruler, cairo_t *cairo_context);
 static void clear_drawing_area(cairo_t *cairo_context);
-static int find_ruler_extrema(SubRuler *ruler);
-/* static void get_rgb_values_at_pixel(guchar *pixel, int *r, int *g, int *b); */
-static gboolean pixels_within_threshold (guchar *pixel_1, guchar *pixel_2);
+static void set_ruler_extrema(Ruler *ruler);
+static gboolean pixels_similar_within_threshold (guchar *pixel_1, guchar *pixel_2);
+static guchar *get_pixel_in_pixbuf (GdkPixbuf *pixbuf, int x, int y);
 
 Ruler *create_new_ruler() {
     Ruler *ruler;
@@ -55,8 +55,8 @@ void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y) {
     vertical_ruler->end_coord = 1080;
 
     clear_drawing_area(cairo_context);
-    find_ruler_extrema(vertical_ruler);
-    find_ruler_extrema(horizontal_ruler);
+    gdk_display_flush(display);
+    set_ruler_extrema(ruler);
     draw_subruler(horizontal_ruler, cairo_context);
     draw_subruler(vertical_ruler, cairo_context);
 
@@ -89,18 +89,18 @@ static void draw_subruler(SubRuler *ruler, cairo_t *cairo_context) {
     cairo_stroke(cairo_context);
 
     /* draw end ticks */
-    if (ruler->orientation == RULER_ORIENTATION_VERTICAL) {
-        cairo_move_to(cairo_context, ruler->x - 10, ruler->start_coord);
-        cairo_line_to(cairo_context, ruler->x + 10, ruler->start_coord);
-        cairo_move_to(cairo_context, ruler->x - 10, ruler->end_coord);
-        cairo_line_to(cairo_context, ruler->x + 10, ruler->end_coord);
-    } else {
-        cairo_move_to(cairo_context, ruler->start_coord, ruler->y - 10);
-        cairo_line_to(cairo_context, ruler->start_coord, ruler->y + 10);
-        cairo_move_to(cairo_context, ruler->end_coord, ruler->y - 10);
-        cairo_line_to(cairo_context, ruler->end_coord, ruler->y + 10);
-    }
-    cairo_stroke(cairo_context);
+    /* if (ruler->orientation == RULER_ORIENTATION_VERTICAL) { */
+    /*     cairo_move_to(cairo_context, ruler->x - 10, ruler->start_coord); */
+    /*     cairo_line_to(cairo_context, ruler->x + 10, ruler->start_coord); */
+    /*     cairo_move_to(cairo_context, ruler->x - 10, ruler->end_coord); */
+    /*     cairo_line_to(cairo_context, ruler->x + 10, ruler->end_coord); */
+    /* } else { */
+    /*     cairo_move_to(cairo_context, ruler->start_coord, ruler->y - 10); */
+    /*     cairo_line_to(cairo_context, ruler->start_coord, ruler->y + 10); */
+    /*     cairo_move_to(cairo_context, ruler->end_coord, ruler->y - 10); */
+    /*     cairo_line_to(cairo_context, ruler->end_coord, ruler->y + 10); */
+    /* } */
+    /* cairo_stroke(cairo_context); */
 }
 
 static void clear_drawing_area(cairo_t *cairo_context) {
@@ -108,7 +108,9 @@ static void clear_drawing_area(cairo_t *cairo_context) {
     cairo_paint(cairo_context);
 }
 
-static int find_ruler_extrema(SubRuler *ruler) {
+static void set_ruler_extrema(Ruler *ruler) {
+    GdkDisplay *display;
+    display = gdk_display_get_default();
     GdkWindow *root_window;
     root_window = gdk_get_default_root_window();
 
@@ -116,70 +118,63 @@ static int find_ruler_extrema(SubRuler *ruler) {
     int height, width;
     height = gdk_window_get_height(root_window);
     width = gdk_window_get_width(root_window);
+    pixbuf = gdk_pixbuf_get_from_window(root_window, 0, 0, width, height);
 
-    if (ruler->orientation == RULER_ORIENTATION_VERTICAL) {
-        pixbuf = gdk_pixbuf_get_from_window(root_window, ruler->x, 0, 1, height);
+    SubRuler *vruler, *hruler;
+    vruler = ruler->vertical_ruler;
+    hruler = ruler->horizontal_ruler;
 
-        /* values necessary for iterating pixbuf */
-        int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
+    if (pixbuf != NULL) {
+        guchar *root_pixel, *current_pixel;
+        root_pixel = get_pixel_in_pixbuf(pixbuf, vruler->x, vruler->y);
+        /* g_print("%d, %d, %d\n", root_pixel[0], root_pixel[1], root_pixel[2]); */
+        gdk_display_flush(display);
 
-        if (pixbuf != NULL) {
-            guchar *pixel_data = gdk_pixbuf_get_pixels(pixbuf);
-            guchar *current_pixel = pixel_data + ruler->y * row_stride;
-            int distance_to_top = ruler->y;
-            for (int i = distance_to_top; i > 0; i--) {
-                guchar *pixel_at_i = pixel_data + i * row_stride;
-                if (! pixels_within_threshold(current_pixel, pixel_at_i)) {
-                    ruler->start_coord =  i;
-                    break;
-                }
-            }
-            for (int i = ruler->y; i < height; i++) {
-                guchar *pixel_at_i = pixel_data + i * row_stride;
-                if (! pixels_within_threshold(current_pixel, pixel_at_i)) {
-                    ruler->end_coord = i;
-                    break;
-                }
+        for (int i = hruler->x; i > 0; i--) {
+            current_pixel = get_pixel_in_pixbuf(pixbuf, i, hruler->y);
+            if (! pixels_similar_within_threshold(current_pixel, root_pixel)) {
+                hruler->start_coord = i;
+                break;
             }
         }
-        g_object_unref(pixbuf);
-    } else {
-        pixbuf = gdk_pixbuf_get_from_window(root_window, 0, ruler->y, width, 1);
-
-        int num_channels = gdk_pixbuf_get_n_channels(pixbuf);
-
-        if (pixbuf != NULL) {
-            guchar *pixel_data = gdk_pixbuf_get_pixels(pixbuf);
-            guchar *current_pixel = pixel_data + ruler->x * num_channels;
-            int distance_to_left_edge = ruler->x;
-            for (int i = distance_to_left_edge; i > 0; i--) {
-                guchar *pixel_at_i = pixel_data + i * num_channels;
-                if (! pixels_within_threshold(current_pixel, pixel_at_i)) {
-                    ruler->start_coord =  i;
-                    break;
-                }
-            }
-            for (int i = ruler->x; i < width; i++) {
-                guchar *pixel_at_i = pixel_data + i * num_channels;
-                if (! pixels_within_threshold(current_pixel, pixel_at_i)) {
-                    ruler->end_coord =  i;
-                    break;
-                }
+        for (int i = hruler->x; i < width; i++) {
+            current_pixel = get_pixel_in_pixbuf(pixbuf, i, hruler->y);
+            if (! pixels_similar_within_threshold(current_pixel, root_pixel)) {
+                hruler->end_coord = i;
+                break;
             }
         }
-        g_object_unref(pixbuf);
+        for (int i = vruler->y; i < height; i++) {
+            current_pixel = get_pixel_in_pixbuf(pixbuf, vruler->x, i);
+            if (! pixels_similar_within_threshold(current_pixel, root_pixel)) {
+                vruler->end_coord = i;
+                break;
+            }
+        }
+        for (int i = vruler->y; i > 0; i--) {
+            current_pixel = get_pixel_in_pixbuf(pixbuf, vruler->x, i);
+            if (! pixels_similar_within_threshold(current_pixel, root_pixel)) {
+                vruler->start_coord = i;
+                break;
+            }
+        }
     }
-    return 0;
+
+    g_object_unref(pixbuf);
 }
 
-/* static void get_rgb_values_at_pixel(guchar * pixel, int *r, int *g, int *b) { */
-/*     *r = pixel[0]; */
-/*     *g = pixel[1]; */
-/*     *b = pixel[2]; */
-/*     g_print("%d, %d, %d\n", *r, *g, *b); */
-/* } */
+static guchar *get_pixel_in_pixbuf (GdkPixbuf *pixbuf, int x, int y) {
+    int row_stride, num_channels;
+    guchar *start_index;
+    start_index = gdk_pixbuf_get_pixels(pixbuf);
+    row_stride = gdk_pixbuf_get_rowstride(pixbuf);
+    num_channels = gdk_pixbuf_get_n_channels(pixbuf);
 
-static gboolean pixels_within_threshold (guchar * pixel_1, guchar * pixel_2) {
+    guchar *index = start_index + x * num_channels + y * row_stride;
+    return index;
+}
+
+static gboolean pixels_similar_within_threshold (guchar * pixel_1, guchar * pixel_2) {
     int threshold = 15;
     int r_diff = abs(pixel_1[0] - pixel_2[0]);
     int g_diff = abs(pixel_1[1] - pixel_2[1]);
