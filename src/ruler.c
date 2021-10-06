@@ -10,33 +10,25 @@ static gboolean pixels_similar_within_threshold (guchar *pixel_1, guchar *pixel_
 static guchar *get_pixel_in_pixbuf (GdkPixbuf *pixbuf, int x, int y);
 
 Ruler *create_new_ruler() {
-    Ruler *ruler;
-    ruler = malloc(sizeof(Ruler));
+    Ruler *ruler = malloc(sizeof(Ruler));
     return ruler;
 }
 
 SubRuler *create_new_subruler(RulerOrientation orientation) {
-    SubRuler *ruler;
-    ruler = malloc(sizeof(SubRuler));
+    SubRuler *ruler = malloc(sizeof(SubRuler));
     ruler->orientation = orientation;
     return ruler;
 }
 
 void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y) {
 
-    GdkWindow *window;
-    window = gtk_widget_get_window(drawing_area);
-    cairo_region_t *region;
-    region = gdk_window_get_visible_region(window);
-    GdkDrawingContext *surface;
-    surface = gdk_window_begin_draw_frame(window, region);
-    cairo_t *cairo_context;
-    cairo_context = gdk_drawing_context_get_cairo_context(surface);
+    GdkWindow *window = gtk_widget_get_window(drawing_area);
+    cairo_region_t *region = gdk_window_get_visible_region(window);
+    GdkDrawingContext *surface = gdk_window_begin_draw_frame(window, region);
+    cairo_t *cairo_context = gdk_drawing_context_get_cairo_context(surface);
 
-    GdkCursor *cursor;
-    GdkDisplay *display;
-    display = gdk_display_get_default();
-    cursor = gdk_cursor_new_from_name(display, "crosshair");
+    GdkDisplay *display = gdk_display_get_default();
+    GdkCursor *cursor = gdk_cursor_new_from_name(display, "crosshair");
     gdk_window_set_cursor(window, cursor);
 
 
@@ -55,7 +47,6 @@ void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y) {
     vertical_ruler->end_coord = 1080;
 
     clear_drawing_area(cairo_context);
-    gdk_display_flush(display);
     set_ruler_extrema(ruler);
     draw_subruler(horizontal_ruler, cairo_context);
     draw_subruler(vertical_ruler, cairo_context);
@@ -72,7 +63,8 @@ static void draw_subruler(SubRuler *ruler, cairo_t *cairo_context) {
     drawn by cairo as the pixel data instead of whatever is underneath. Doing
     this seems to fix the problem. But does cause the line to flicker a little.
     will look into a better implementation later */
-    int pixel_gap = 3;
+    int pixel_gap = 1;
+    int tick_width = 5;
 
     /* draw main line */
     if (ruler->orientation == RULER_ORIENTATION_VERTICAL) {
@@ -89,18 +81,18 @@ static void draw_subruler(SubRuler *ruler, cairo_t *cairo_context) {
     cairo_stroke(cairo_context);
 
     /* draw end ticks */
-    /* if (ruler->orientation == RULER_ORIENTATION_VERTICAL) { */
-    /*     cairo_move_to(cairo_context, ruler->x - 10, ruler->start_coord); */
-    /*     cairo_line_to(cairo_context, ruler->x + 10, ruler->start_coord); */
-    /*     cairo_move_to(cairo_context, ruler->x - 10, ruler->end_coord); */
-    /*     cairo_line_to(cairo_context, ruler->x + 10, ruler->end_coord); */
-    /* } else { */
-    /*     cairo_move_to(cairo_context, ruler->start_coord, ruler->y - 10); */
-    /*     cairo_line_to(cairo_context, ruler->start_coord, ruler->y + 10); */
-    /*     cairo_move_to(cairo_context, ruler->end_coord, ruler->y - 10); */
-    /*     cairo_line_to(cairo_context, ruler->end_coord, ruler->y + 10); */
-    /* } */
-    /* cairo_stroke(cairo_context); */
+    if (ruler->orientation == RULER_ORIENTATION_VERTICAL) {
+        cairo_move_to(cairo_context, ruler->x - tick_width, ruler->start_coord);
+        cairo_line_to(cairo_context, ruler->x + tick_width, ruler->start_coord);
+        cairo_move_to(cairo_context, ruler->x - tick_width, ruler->end_coord);
+        cairo_line_to(cairo_context, ruler->x + tick_width, ruler->end_coord);
+    } else {
+        cairo_move_to(cairo_context, ruler->start_coord, ruler->y - tick_width);
+        cairo_line_to(cairo_context, ruler->start_coord, ruler->y + tick_width);
+        cairo_move_to(cairo_context, ruler->end_coord, ruler->y - tick_width);
+        cairo_line_to(cairo_context, ruler->end_coord, ruler->y + tick_width);
+    }
+    cairo_stroke(cairo_context);
 }
 
 static void clear_drawing_area(cairo_t *cairo_context) {
@@ -109,15 +101,11 @@ static void clear_drawing_area(cairo_t *cairo_context) {
 }
 
 static void set_ruler_extrema(Ruler *ruler) {
-    GdkDisplay *display;
-    display = gdk_display_get_default();
-    GdkWindow *root_window;
-    root_window = gdk_get_default_root_window();
+    GdkWindow *root_window = gdk_get_default_root_window();
 
     GdkPixbuf *pixbuf;
-    int height, width;
-    height = gdk_window_get_height(root_window);
-    width = gdk_window_get_width(root_window);
+    int height = gdk_window_get_height(root_window);
+    int width = gdk_window_get_width(root_window);
     pixbuf = gdk_pixbuf_get_from_window(root_window, 0, 0, width, height);
 
     SubRuler *vruler, *hruler;
@@ -127,8 +115,6 @@ static void set_ruler_extrema(Ruler *ruler) {
     if (pixbuf != NULL) {
         guchar *root_pixel, *current_pixel;
         root_pixel = get_pixel_in_pixbuf(pixbuf, vruler->x, vruler->y);
-        /* g_print("%d, %d, %d\n", root_pixel[0], root_pixel[1], root_pixel[2]); */
-        gdk_display_flush(display);
 
         for (int i = hruler->x; i > 0; i--) {
             current_pixel = get_pixel_in_pixbuf(pixbuf, i, hruler->y);
@@ -164,11 +150,9 @@ static void set_ruler_extrema(Ruler *ruler) {
 }
 
 static guchar *get_pixel_in_pixbuf (GdkPixbuf *pixbuf, int x, int y) {
-    int row_stride, num_channels;
-    guchar *start_index;
-    start_index = gdk_pixbuf_get_pixels(pixbuf);
-    row_stride = gdk_pixbuf_get_rowstride(pixbuf);
-    num_channels = gdk_pixbuf_get_n_channels(pixbuf);
+    guchar *start_index = gdk_pixbuf_get_pixels(pixbuf);
+    int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
+    int num_channels = gdk_pixbuf_get_n_channels(pixbuf);
 
     guchar *index = start_index + x * num_channels + y * row_stride;
     return index;

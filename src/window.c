@@ -3,19 +3,16 @@
 #include "overlay.h"
 
 GtkWidget *create_main_window(GtkApplication *app) {
-    GtkWidget *window;
-    window = gtk_application_window_new(app);
+    GtkWidget *window = gtk_application_window_new(app);
     init_window_layout(GTK_APPLICATION_WINDOW (window));
     gtk_widget_set_size_request(window, 200, 200);
     return window;
 }
 
 void init_window_layout(GtkApplicationWindow *window) {
-    GtkWidget *layout_box;
-    GtkWidget *button;
-    layout_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget *layout_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget *button = gtk_button_new_with_label("start");
 
-    button = gtk_button_new_with_label("start");
     g_signal_connect(G_OBJECT (button), "clicked", G_CALLBACK (create_overlay_window), NULL);
 
     gtk_widget_set_margin_start(layout_box, 10);
