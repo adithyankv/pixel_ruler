@@ -7,12 +7,19 @@ static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointe
 static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
 static void on_destroy(GtkWidget *overlay_window, Ruler *ruler);
 
-void create_overlay_window(GtkWidget *window, gpointer *data) {
+Overlay *create_overlay(void) {
+    Overlay *overlay = malloc(sizeof(Overlay));
+    GtkWidget *overlay_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    overlay->overlay_window = overlay_window;
+    return overlay;
+}
+
+void draw_overlay_window(Overlay *overlay) {
     /* creating a fullscreen always on top, transparent window to draw on.
     *  A more elegant solution would be to draw on the X Overlay window, but
     *  that implementation doesn't seem to work with some distros/compositors.
     *  This implementation may however be susceptible to whims of window managers */
-    GtkWidget *overlay_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *overlay_window = overlay->overlay_window;
     gtk_widget_set_app_paintable(overlay_window, TRUE);
     gtk_window_fullscreen(GTK_WINDOW (overlay_window));
     gtk_window_set_keep_above(GTK_WINDOW (overlay_window), TRUE);
