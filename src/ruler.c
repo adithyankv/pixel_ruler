@@ -58,39 +58,30 @@ static void draw_subruler(SubRuler *ruler, cairo_t *cairo_context) {
     cairo_set_operator(cairo_context, CAIRO_OPERATOR_SOURCE);
     cairo_set_source_rgb(cairo_context, 1, 0, 0);
 
-    /* leaving a gap of a few pixels under the mouse pointer. This is because some
-    times the root window pixbuf seems to be yielding the actual lines being
-    drawn by cairo as the pixel data instead of whatever is underneath. Doing
-    this seems to fix the problem. But does cause the line to flicker a little.
-    will look into a better implementation later */
-    int pixel_gap = 1;
     int tick_width = 5;
+    int line_width = 2;
+    cairo_set_line_width(cairo_context, line_width);
 
     /* draw main line */
     if (ruler->orientation == RULER_ORIENTATION_VERTICAL) {
         cairo_move_to(cairo_context, ruler->x, ruler->start_coord);
-        cairo_line_to(cairo_context, ruler->x, ruler->y - pixel_gap);
-        cairo_move_to(cairo_context, ruler->x, ruler->y + pixel_gap);
         cairo_line_to(cairo_context, ruler->x, ruler->end_coord);
     } else {
         cairo_move_to(cairo_context, ruler->start_coord, ruler->y);
-        cairo_line_to(cairo_context, ruler->x - pixel_gap, ruler->y);
-        cairo_move_to(cairo_context, ruler->x + pixel_gap, ruler->y);
         cairo_line_to(cairo_context, ruler->end_coord, ruler->y);
     }
-    cairo_stroke(cairo_context);
 
     /* draw end ticks */
     if (ruler->orientation == RULER_ORIENTATION_VERTICAL) {
-        cairo_move_to(cairo_context, ruler->x - tick_width, ruler->start_coord);
-        cairo_line_to(cairo_context, ruler->x + tick_width, ruler->start_coord);
-        cairo_move_to(cairo_context, ruler->x - tick_width, ruler->end_coord);
-        cairo_line_to(cairo_context, ruler->x + tick_width, ruler->end_coord);
+        cairo_move_to(cairo_context, ruler->x - tick_width, ruler->start_coord + line_width / 2);
+        cairo_line_to(cairo_context, ruler->x + tick_width, ruler->start_coord + line_width / 2);
+        cairo_move_to(cairo_context, ruler->x - tick_width, ruler->end_coord - line_width / 2);
+        cairo_line_to(cairo_context, ruler->x + tick_width, ruler->end_coord - line_width / 2);
     } else {
-        cairo_move_to(cairo_context, ruler->start_coord, ruler->y - tick_width);
-        cairo_line_to(cairo_context, ruler->start_coord, ruler->y + tick_width);
-        cairo_move_to(cairo_context, ruler->end_coord, ruler->y - tick_width);
-        cairo_line_to(cairo_context, ruler->end_coord, ruler->y + tick_width);
+        cairo_move_to(cairo_context, ruler->start_coord + line_width / 2, ruler->y - tick_width);
+        cairo_line_to(cairo_context, ruler->start_coord + line_width / 2, ruler->y + tick_width);
+        cairo_move_to(cairo_context, ruler->end_coord - line_width / 2, ruler->y - tick_width);
+        cairo_line_to(cairo_context, ruler->end_coord - line_width / 2, ruler->y + tick_width);
     }
     cairo_stroke(cairo_context);
 }
@@ -145,7 +136,6 @@ static void set_ruler_extrema(Ruler *ruler) {
             }
         }
     }
-
     g_object_unref(pixbuf);
 }
 

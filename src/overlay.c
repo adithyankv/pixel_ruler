@@ -9,10 +9,9 @@ static void on_destroy(GtkWidget *overlay_window, Ruler *ruler);
 
 void create_overlay_window(GtkWidget *window, gpointer *data) {
     /* creating a fullscreen always on top, transparent window to draw on.
-    A more elegant solution would be to draw on the X Overlay window, but
-    that implementation doesn't seem to work with some distros/compositors */
-
-    /* This implementation may however be susceptible to whims of window managers */
+    *  A more elegant solution would be to draw on the X Overlay window, but
+    *  that implementation doesn't seem to work with some distros/compositors.
+    *  This implementation may however be susceptible to whims of window managers */
     GtkWidget *overlay_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_app_paintable(overlay_window, TRUE);
     gtk_window_fullscreen(GTK_WINDOW (overlay_window));
