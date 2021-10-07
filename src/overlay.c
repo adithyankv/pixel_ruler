@@ -13,10 +13,6 @@ Overlay *create_overlay(void) {
     overlay->overlay_window = overlay_window;
 
     Ruler *ruler = create_new_ruler();
-    SubRuler *horizontal_ruler = create_new_subruler (RULER_ORIENTATION_HORIZONTAL);
-    SubRuler *vertical_ruler = create_new_subruler (RULER_ORIENTATION_VERTICAL);
-    ruler->horizontal_ruler = horizontal_ruler;
-    ruler->vertical_ruler = vertical_ruler;
     overlay->ruler = ruler;
 
     return overlay;

@@ -11,6 +11,12 @@ static guchar *get_pixel_in_pixbuf (GdkPixbuf *pixbuf, int x, int y);
 
 Ruler *create_new_ruler() {
     Ruler *ruler = malloc(sizeof(Ruler));
+
+    SubRuler *horizontal_ruler = create_new_subruler (RULER_ORIENTATION_HORIZONTAL);
+    SubRuler *vertical_ruler = create_new_subruler (RULER_ORIENTATION_VERTICAL);
+    ruler->horizontal_ruler = horizontal_ruler;
+    ruler->vertical_ruler = vertical_ruler;
+
     return ruler;
 }
 
