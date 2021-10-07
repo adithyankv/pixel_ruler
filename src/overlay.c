@@ -6,7 +6,7 @@
 static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Overlay *overlay);
 static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, Overlay *overlay);
 static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
-static void on_destroy(GtkWidget *overlay_window, Overlay *overlay);
+static void cleanup_resources(GtkWidget *overlay_window, Overlay *overlay);
 void destroy_overlay(Overlay *overlay);
 
 Overlay *create_overlay(void) {
@@ -46,7 +46,7 @@ void draw_overlay_window(Overlay *overlay) {
     }
 
     g_signal_connect (G_OBJECT (overlay_window), "destroy",
-                      G_CALLBACK (on_destroy), (gpointer) overlay);
+                      G_CALLBACK (cleanup_resources), (gpointer) overlay);
     g_signal_connect(G_OBJECT (drawing_area), "motion-notify-event",
                      G_CALLBACK (on_mouse_moved), (gpointer) overlay);
     g_signal_connect(G_OBJECT (overlay_window), "button-press-event",
@@ -57,11 +57,9 @@ void draw_overlay_window(Overlay *overlay) {
 }
 
 void destroy_overlay (Overlay *overlay) {
-    g_print("cleaning up overlay\n");
     destroy_ruler(overlay->ruler);
     destroy_measurement_list(overlay->measurement_list);
     free(overlay);
-    g_print("finished cleaning up overlay\n");
 }
 
 static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Overlay *overlay) {
@@ -91,7 +89,6 @@ static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, Overlay
         Measurement *measurement;
         switch (event->button.button) {
         case 1:
-            g_print("left click\n");
             measurement = create_new_measurement(overlay->ruler);
             add_measurement_to_list(measurement, overlay->measurement_list);
             break;
@@ -105,6 +102,6 @@ static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, Overlay
     }
 }
 
-static void on_destroy(GtkWidget *overlay_window, Overlay *overlay) {
+static void cleanup_resources(GtkWidget *overlay_window, Overlay *overlay) {
     destroy_overlay(overlay);
 }

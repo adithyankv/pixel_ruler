@@ -23,17 +23,14 @@ MeasurementList *create_new_measurement_list(void) {
 }
 
 void destroy_measurement_list (MeasurementList *list) {
-    g_print("cleaning up measurement list\n");
     MeasurementNode *current_node = list->head;
     while (current_node != NULL) {
         list->head = current_node->next;
         free(current_node->measurement);
         free(current_node);
         current_node = list->head;
-        g_print("cleaning measurement\n");
     }
     free(list);
-    g_print("finished cleaning up measurement list\n");
 }
 
 /* adds measurement to beginning of linked list */

@@ -27,11 +27,9 @@ SubRuler *create_new_subruler(RulerOrientation orientation) {
 }
 
 void destroy_ruler(Ruler *ruler) {
-    g_print("cleaning up ruler\n");
     free(ruler->horizontal_ruler);
     free(ruler->vertical_ruler);
     free(ruler);
-    g_print("finished cleaning up ruler\n");
 }
 
 void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y) {
