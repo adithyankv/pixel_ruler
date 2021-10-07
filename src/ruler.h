@@ -1,3 +1,6 @@
+#ifndef RULER_H_INCLUDED
+#define RULER_H_INCLUDED
+
 #ifndef GTK_H_INCLUDED
 #define GTK_H_INCLUDED
 #include <gtk/gtk.h>
@@ -22,3 +25,4 @@ void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y);
 SubRuler *create_new_subruler(RulerOrientation orientation);
 Ruler *create_new_ruler();
 
+#endif /* RULER_H_INCLUDED */

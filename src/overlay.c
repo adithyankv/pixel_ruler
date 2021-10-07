@@ -5,12 +5,20 @@
 static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Ruler *ruler);
 static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
 static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
-static void on_destroy(GtkWidget *overlay_window, Ruler *ruler);
+static void on_destroy(GtkWidget *overlay_window, Overlay *overlay);
 
 Overlay *create_overlay(void) {
     Overlay *overlay = malloc(sizeof(Overlay));
     GtkWidget *overlay_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     overlay->overlay_window = overlay_window;
+
+    Ruler *ruler = create_new_ruler();
+    SubRuler *horizontal_ruler = create_new_subruler (RULER_ORIENTATION_HORIZONTAL);
+    SubRuler *vertical_ruler = create_new_subruler (RULER_ORIENTATION_VERTICAL);
+    ruler->horizontal_ruler = horizontal_ruler;
+    ruler->vertical_ruler = vertical_ruler;
+    overlay->ruler = ruler;
+
     return overlay;
 }
 
@@ -20,6 +28,7 @@ void draw_overlay_window(Overlay *overlay) {
     *  that implementation doesn't seem to work with some distros/compositors.
     *  This implementation may however be susceptible to whims of window managers */
     GtkWidget *overlay_window = overlay->overlay_window;
+    Ruler *ruler = overlay->ruler;
     gtk_widget_set_app_paintable(overlay_window, TRUE);
     gtk_window_fullscreen(GTK_WINDOW (overlay_window));
     gtk_window_set_keep_above(GTK_WINDOW (overlay_window), TRUE);
@@ -40,13 +49,6 @@ void draw_overlay_window(Overlay *overlay) {
         gtk_widget_set_visual(overlay_window, visual);
         gtk_widget_show_all(overlay_window);
     }
-
-    Ruler *ruler = create_new_ruler();
-    SubRuler *horizontal_ruler = create_new_subruler (RULER_ORIENTATION_HORIZONTAL);
-    SubRuler *vertical_ruler = create_new_subruler (RULER_ORIENTATION_VERTICAL);
-    ruler->horizontal_ruler = horizontal_ruler;
-    ruler->vertical_ruler = vertical_ruler;
-
     g_signal_connect (G_OBJECT (overlay_window), "destroy",
                       G_CALLBACK (on_destroy), (gpointer) ruler);
     g_signal_connect(G_OBJECT (drawing_area), "motion-notify-event",
@@ -91,8 +93,9 @@ static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointe
     }
 }
 
-static void on_destroy(GtkWidget *overlay_window, Ruler *ruler) {
-    free(ruler->horizontal_ruler);
-    free(ruler->vertical_ruler);
-    free(ruler);
+static void on_destroy(GtkWidget *overlay_window, Overlay *overlay) {
+    free(overlay->ruler->horizontal_ruler);
+    free(overlay->ruler->vertical_ruler);
+    free(overlay->ruler);
+    free(overlay);
 }
