@@ -1,11 +1,13 @@
 #include <gtk/gtk.h>
 #include "overlay.h"
 #include "ruler.h"
+#include "measurement.h"
 
-static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Ruler *ruler);
-static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
+static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Overlay *overlay);
+static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, Overlay *overlay);
 static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer *data);
 static void on_destroy(GtkWidget *overlay_window, Overlay *overlay);
+void destroy_overlay(Overlay *overlay);
 
 Overlay *create_overlay(void) {
     Overlay *overlay = malloc(sizeof(Overlay));
@@ -14,6 +16,9 @@ Overlay *create_overlay(void) {
 
     Ruler *ruler = create_new_ruler();
     overlay->ruler = ruler;
+
+    MeasurementList *list = create_new_measurement_list();
+    overlay->measurement_list = list;
 
     return overlay;
 }
@@ -24,15 +29,9 @@ void draw_overlay_window(Overlay *overlay) {
     *  that implementation doesn't seem to work with some distros/compositors.
     *  This implementation may however be susceptible to whims of window managers */
     GtkWidget *overlay_window = overlay->overlay_window;
-    Ruler *ruler = overlay->ruler;
     gtk_widget_set_app_paintable(overlay_window, TRUE);
     gtk_window_fullscreen(GTK_WINDOW (overlay_window));
     gtk_window_set_keep_above(GTK_WINDOW (overlay_window), TRUE);
-    g_signal_connect(G_OBJECT (overlay_window), "button-press-event",
-                     G_CALLBACK (on_mouse_clicked), NULL);
-    g_signal_connect(G_OBJECT (overlay_window), "key-press-event",
-                     G_CALLBACK (on_key_pressed), NULL);
-
     GdkScreen *screen = gdk_screen_get_default();
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
 
@@ -45,18 +44,32 @@ void draw_overlay_window(Overlay *overlay) {
         gtk_widget_set_visual(overlay_window, visual);
         gtk_widget_show_all(overlay_window);
     }
+
     g_signal_connect (G_OBJECT (overlay_window), "destroy",
-                      G_CALLBACK (on_destroy), (gpointer) ruler);
+                      G_CALLBACK (on_destroy), (gpointer) overlay);
     g_signal_connect(G_OBJECT (drawing_area), "motion-notify-event",
-                     G_CALLBACK (on_mouse_moved), (gpointer) ruler);
+                     G_CALLBACK (on_mouse_moved), (gpointer) overlay);
+    g_signal_connect(G_OBJECT (overlay_window), "button-press-event",
+                     G_CALLBACK (on_mouse_clicked), (gpointer) overlay);
+    g_signal_connect(G_OBJECT (overlay_window), "key-press-event",
+                     G_CALLBACK (on_key_pressed), NULL);
 
 }
 
-static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Ruler *ruler) {
+void destroy_overlay (Overlay *overlay) {
+    g_print("cleaning up overlay\n");
+    destroy_ruler(overlay->ruler);
+    destroy_measurement_list(overlay->measurement_list);
+    free(overlay);
+    g_print("finished cleaning up overlay\n");
+}
+
+static void on_mouse_moved(GtkWidget *drawing_area, GdkEvent *event, Overlay *overlay) {
     if (event->type == GDK_MOTION_NOTIFY) {
         int mouse_x = event->motion.x;
         int mouse_y = event->motion.y;
-        draw_ruler(ruler, drawing_area, mouse_x, mouse_y);
+        draw_ruler(overlay->ruler, drawing_area, mouse_x, mouse_y);
+        draw_all_measurements(overlay->measurement_list, drawing_area);
     }
 }
 
@@ -73,11 +86,14 @@ static void on_key_pressed(GtkWidget *overlay_window, GdkEvent *event, gpointer 
     }
 }
 
-static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointer *data) {
+static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, Overlay *overlay) {
     if (event->type == GDK_BUTTON_PRESS) {
+        Measurement *measurement;
         switch (event->button.button) {
         case 1:
             g_print("left click\n");
+            measurement = create_new_measurement(overlay->ruler);
+            add_measurement_to_list(measurement, overlay->measurement_list);
             break;
         case 3:
             g_print("right click\n");
@@ -90,8 +106,5 @@ static void on_mouse_clicked(GtkWidget *overlay_window, GdkEvent *event, gpointe
 }
 
 static void on_destroy(GtkWidget *overlay_window, Overlay *overlay) {
-    free(overlay->ruler->horizontal_ruler);
-    free(overlay->ruler->vertical_ruler);
-    free(overlay->ruler);
-    free(overlay);
+    destroy_overlay(overlay);
 }

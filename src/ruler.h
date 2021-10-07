@@ -22,7 +22,9 @@ typedef struct Ruler {
 } Ruler;
 
 void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y);
+
 SubRuler *create_new_subruler(RulerOrientation orientation);
 Ruler *create_new_ruler();
+void destroy_ruler(Ruler *ruler);
 
 #endif /* RULER_H_INCLUDED */

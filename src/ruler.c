@@ -26,6 +26,14 @@ SubRuler *create_new_subruler(RulerOrientation orientation) {
     return ruler;
 }
 
+void destroy_ruler(Ruler *ruler) {
+    g_print("cleaning up ruler\n");
+    free(ruler->horizontal_ruler);
+    free(ruler->vertical_ruler);
+    free(ruler);
+    g_print("finished cleaning up ruler\n");
+}
+
 void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y) {
 
     GdkWindow *window = gtk_widget_get_window(drawing_area);
@@ -36,7 +44,6 @@ void draw_ruler(Ruler *ruler, GtkWidget *drawing_area, int x, int y) {
     GdkDisplay *display = gdk_display_get_default();
     GdkCursor *cursor = gdk_cursor_new_from_name(display, "crosshair");
     gdk_window_set_cursor(window, cursor);
-
 
     SubRuler *horizontal_ruler;
     horizontal_ruler = ruler->horizontal_ruler;

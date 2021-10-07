@@ -8,6 +8,7 @@ executable(
   'window.c',
   'overlay.c',
   'ruler.c',
+  'measurement.c',
 
   dependencies: [gtkdeps, cairodeps]
   )
