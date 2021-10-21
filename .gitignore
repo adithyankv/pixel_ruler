@@ -4,6 +4,7 @@
 
 # language server files
 compile_flags.txt
+.clang-format
 
 # build directory
 build
